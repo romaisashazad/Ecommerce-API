@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MyShop</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .grid-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .product-card {
+            border: 1px solid #FFC0CB;
+            border-radius: 8px;
+            padding: 12px;
+            width: 180px;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            background: #f5f5f5;
+        }
+
+        .detail-view {
+            margin-top: 16px;
+        }
+
+        /* small helpers for the controls */
+        .toolbar {
+            margin-bottom: 16px;
+        }
+
+        .toolbar input,
+        .form-box input,
+        .form-box textarea {
+            padding: 6px;
+            margin: 4px 4px 4px 0;
+        }
+
+        .form-box {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            max-width: 420px;
+        }
+
+        .card-buttons {
+            margin-top: 8px;
+        }
+
+        .card-buttons button {
+            margin-right: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>MyShop</h1>
+
+    <p id="product-count"></p> <!-- shows how many products are currently listed -->
+
+    <!-- SEARCH / FILTER toolbar -->
+    <div class="toolbar">
+        <input id="search-input" type="text" placeholder="Search by name...">
+        <button onclick="doSearch()">Search</button>
+        <button onclick="clearSearch()">Clear</button>
+    </div>
+
+    <!-- ADD PRODUCT form -->
+    <div class="form-box">
+        <h3>Add a product</h3>
+        <!-- maxlength enforces the backend length caps right in the input -->
+        <input id="add-name" type="text" placeholder="Name" maxlength="100"><br>
+        <input id="add-price" type="number" placeholder="Price"><br>
+        <input id="add-category" type="text" placeholder="Category" maxlength="50"><br>
+        <textarea id="add-description" placeholder="Description" maxlength="500"></textarea><br>
+        <!-- multi dim text box -->
+        <button onclick="addProduct()">Add product</button>
+        <p id="add-error" style="color: #c00; margin: 6px 0 0 0;"></p> <!-- inline error message -->
+    </div>
+
+    <div id="product-grid" class="grid-container"></div>
+
+    <!-- DETAIL view (also holds the edit form) -->
+    <div id="product-detail" style="display: none;" class="detail-view">
+        <button onclick="showGrid()">Back to products</button>
+        <div id="product-detail-content"></div>
+    </div>
+
+    <script>
+        // const api_url = "https://ecommerce-api-romaisashazads-projects.vercel.app/api";
+        const api_url = "http://13.63.106.44/api";
+
+
+        // ---------- READ (list, with optional search) ----------
+        async function loadAllProducts(search) {
+            let url = api_url + "/products/";
+            if (search) {
+                url += "?search=" + encodeURIComponent(search);  // converts unsafe characters to URL safe encoded form
+            }
+            const res = await fetch(url);
+            const data = await res.json();
+
+            // show the count the API returned ("1 product" / "5 products")
+            document.getElementById("product-count").textContent =
+                data.count + " product" + (data.count === 1 ? "" : "s");
+
+            const grid = document.getElementById("product-grid");
+            grid.innerHTML = "";
+
+            data.products.forEach(p => {
+                const card = document.createElement("div");
+                card.className = "product-card";
+
+                card.innerHTML =
+                    "<h3>" + p.name + "</h3>" +
+                    "<p>Rs. " + p.price + "</p>" +
+                    "<div class='card-buttons'>" +
+                    "<button class='edit-btn'>Edit</button>" +
+                    "<button class='delete-btn'>Delete</button>" +
+                    "</div>";
+
+                // clicking the card (but not the buttons) opens detail
+                card.onclick = function () {
+                    loadProductDetail(p._id);
+                };
+
+                // Edit button: stopPropagation so the card's onclick doesn't also fire
+                card.querySelector(".edit-btn").onclick = function (event) {
+                    event.stopPropagation();
+                    showEditForm(p);
+                };
+
+                // Delete button
+                card.querySelector(".delete-btn").onclick = function (event) {
+                    event.stopPropagation();
+                    deleteProduct(p._id);
+                };
+
+                grid.appendChild(card);
+            });
+        }
+
+        // ---------- SHARED VALIDATION ----------
+        // Mirrors the backend rules for fast feedback. The backend is still the
+        // real gatekeeper; this just saves a round-trip and shows a friendlier message.
+        // Returns an error string if something's wrong, or null if the input is valid.
+        function validateProductInput(name, priceRaw) {
+            if (!name) {                                  // empty or all-whitespace (we .trim() before calling)
+                return "Name is required";
+            }
+            if (!/[a-zA-Z]/.test(name)) {                 // must contain at least one letter (matches backend isalpha check)
+                return "Product name must contain letters";
+            }
+            const price = Number(priceRaw);
+            if (priceRaw === "" || isNaN(price) || price < 0) {   // catches blank (Number("")===0) and junk (NaN)
+                return "Price must be a number that is 0 or more";
+            }
+            return null;  // all good
+        }
+
+        // ---------- SEARCH ----------
+        function doSearch() {
+            const term = document.getElementById("search-input").value;
+            loadAllProducts(term);
+        }
+
+        function clearSearch() {
+            document.getElementById("search-input").value = "";
+            loadAllProducts();
+        }
+
+        // ---------- CREATE (POST) ----------
+        async function addProduct() {
+            const errorEl = document.getElementById("add-error");
+            errorEl.textContent = "";   // clear any previous error
+
+            const name = document.getElementById("add-name").value.trim();   // trim catches all-spaces names
+            const priceRaw = document.getElementById("add-price").value;
+
+            // validate before sending anything
+            const problem = validateProductInput(name, priceRaw);
+            if (problem) {
+                errorEl.textContent = problem;
+                return;
+            }
+
+            const newProduct = {
+                name: name,
+                price: Number(priceRaw),
+                category: document.getElementById("add-category").value,
+                description: document.getElementById("add-description").value
+            };
+
+            const res = await fetch(api_url + "/products/create/", {   // create lives at its own endpoint now
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newProduct)   // turn the JS object into JSON text to send i
+            });
+
+            if (!res.ok) {  //true for every success status code
+                const err = await res.json();
+                errorEl.textContent = "Could not add product: " + (err.error || res.status);   // backend error shown inline too
+                return;
+            }
+
+            // clear the form and refresh the list, wipe every input field in add a product to blank
+            document.getElementById("add-name").value = "";
+            document.getElementById("add-price").value = "";
+            document.getElementById("add-category").value = "";
+            document.getElementById("add-description").value = "";
+            loadAllProducts();
+        }
+
+        // ---------- DELETE ----------
+        async function deleteProduct(productId) {
+            if (!confirm("Delete this product?")) return;
+
+            const res = await fetch(api_url + "/products/" + productId + "/", {
+                method: "DELETE"
+            });
+
+            if (!res.ok) {
+                alert("Could not delete (status " + res.status + ")");
+                return;
+            }
+            loadAllProducts();
+        }
+
+        // ---------- READ ONE (detail) ----------
+        async function loadProductDetail(productId) {
+            const res = await fetch(api_url + "/products/" + productId + "/");
+            const prod = await res.json();
+
+            const content = document.getElementById("product-detail-content");
+            content.innerHTML =
+                "<h2>" + prod.name + "</h2>" +
+                "<p>Price: Rs. " + prod.price + "</p>" +
+                "<p>Category: " + prod.category + "</p>" +
+                "<p>" + prod.description + "</p>";
+
+            document.getElementById("product-grid").style.display = "none";
+            document.getElementById("product-detail").style.display = "block";
+        }
+
+        // ---------- UPDATE (PATCH) ----------
+        // Show an edit form pre-filled with the product's current values
+        function showEditForm(p) {
+            const content = document.getElementById("product-detail-content");
+            content.innerHTML =
+                "<h2>Edit product</h2>" +
+                "<input id='edit-name' maxlength='100'><br>" +
+                "<input id='edit-price' type='number'><br>" +
+                "<input id='edit-category' maxlength='50'><br>" +
+                "<textarea id='edit-description' maxlength='500'></textarea><br>" +
+                "<button id='save-edit'>Save changes</button>" +
+                "<p id='edit-error' style='color: #c00; margin: 6px 0 0 0;'></p>";
+
+            // set values as properties so apostrophes (e.g. "Women's Kurta") don't break the HTML
+            content.querySelector("#edit-name").value = p.name;
+            content.querySelector("#edit-price").value = p.price;
+            content.querySelector("#edit-category").value = p.category;
+            content.querySelector("#edit-description").value = p.description;
+
+            content.querySelector("#save-edit").onclick = function () {
+                updateProduct(p._id);
+            };
+
+            document.getElementById("product-grid").style.display = "none";
+            document.getElementById("product-detail").style.display = "block";
+        }
+
+        async function updateProduct(productId) {
+            const errorEl = document.getElementById("edit-error");
+            errorEl.textContent = "";
+
+            const name = document.getElementById("edit-name").value.trim();
+            const priceRaw = document.getElementById("edit-price").value;
+
+            // same validation as add — edit still produces a full object, so the rules apply
+            const problem = validateProductInput(name, priceRaw);
+            if (problem) {
+                errorEl.textContent = problem;
+                return;
+            }
+
+            const updated = {
+                name: name,
+                price: Number(priceRaw),
+                category: document.getElementById("edit-category").value,
+                description: document.getElementById("edit-description").value
+            };
+
+            const res = await fetch(api_url + "/products/" + productId + "/", {
+                method: "PATCH",   // PATCH = partial update; sending all fields here, but only what you include gets changed
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updated)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                errorEl.textContent = "Could not update: " + (err.error || res.status);
+                return;
+            }
+            showGrid();
+            loadAllProducts();
+        }
+
+        // ---------- navigation ----------
+        function showGrid() {
+            document.getElementById("product-detail").style.display = "none";
+            document.getElementById("product-grid").style.display = "flex";  // FIX: flex, not block
+        }
+
+        // kick off the fetch
+        loadAllProducts();
+    </script>
+</body>
+
+</html>
