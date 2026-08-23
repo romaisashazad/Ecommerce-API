@@ -52,6 +52,12 @@ def validate_product_data(data, require_all=True):
         if type(description) is not str or len(description) > 500:
             return "Invalid product description"
 
+    # 5. Check image (a URL string, OPTIONAL)
+    if "image" in data:
+        image = data.get("image", "")
+        if type(image) is not str or len(image) > 500:
+            return "Invalid product image"
+
     return None  # when everything is correct
 
 @csrf_exempt
@@ -71,6 +77,7 @@ def create_product(request):
         "price" : data.get("price"),
         "category": data.get("category", ""),
         "description": data.get("description", ""),
+        "image": data.get("image", ""),
         "is_deleted": False,
     }
     result = products_collection.insert_one(new_product)
@@ -224,6 +231,7 @@ def update_product(request,product_id):
             "price": data["price"],
             "category": data.get("category", ""),
             "description": data.get("description", ""),
+            "image": data.get("image", ""),
             "is_deleted": False,   # replace_one wipes EVERYTHING not listed, so we carry this flag forward
         }
         result = products_collection.replace_one(query, replacement)
@@ -233,7 +241,7 @@ def update_product(request,product_id):
         if error_message is not None:
             return JsonResponse({"error": error_message}, status=400)
 
-        allowed_fields = ["name", "price", "category", "description"]
+        allowed_fields = ["name", "price", "category", "description","image"]
         fields_to_update = {}
         for field in allowed_fields:
             if field in data:                 # key being PRESENT is the signal to update it
