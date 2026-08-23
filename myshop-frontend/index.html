@@ -4,10 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <title>MyShop</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind using CDN: no build step, css library, no writing only pre-made classes added  -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        teal: { brand: "#5EC8C8", soft: "#D9F2F1", deep: "#2FA3A3" },
+                        lilac: { brand: "#B39DDB", soft: "#EDE7F6", deep: "#8B6FC4" },
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            background: linear-gradient(160deg, #F7FCFC 0%, #F6F3FB 100%);
         }
 
         .grid-container {
@@ -64,35 +81,76 @@
 
 <body>
 
-    <h1>MyShop</h1>
+    <nav class="bg-white border-b border-slate-100 sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-6 flex items-center justify-between h-16">
 
-    <p id="product-count"></p> <!-- shows how many products are currently listed -->
+            <!-- brand: a coloured square logo + the shop name -->
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 rounded-xl bg-teal-brand flex items-center justify-center text-white font-bold">M
+                </div>
+                <span class="font-bold text-xl">MyShop</span>
+            </div>
 
-    <!-- SEARCH / FILTER toolbar -->
-    <div class="toolbar">
-        <input id="search-input" type="text" placeholder="Search by name...">
-        <button onclick="doSearch()">Search</button>
-        <button onclick="clearSearch()">Clear</button>
-    </div>
+            <!--================TAB BUTTONS==================== -->
+            <!-- tab buttons -->
+            <div class="flex items-center gap-1 bg-slate-100 rounded-full p-1">
+                <button id="tab-browse" onclick="showTab('browse')"
+                    class="px-4 py-1.5 rounded-full text-sm font-medium bg-white shadow text-teal-deep">Browse</button>
+                <button id="tab-add" onclick="showTab('add')"
+                    class="px-4 py-1.5 rounded-full text-sm font-medium text-slate-500">Add product</button>
+            </div>
 
-    <!-- ADD PRODUCT form -->
-    <div class="form-box">
-        <h3>Add a product</h3>
-        <!-- maxlength enforces the backend length caps right in the input -->
-        <input id="add-name" type="text" placeholder="Name" maxlength="100"><br>
-        <input id="add-price" type="number" placeholder="Price"><br>
-        <input id="add-category" type="text" placeholder="Category" maxlength="50"><br>
-        <textarea id="add-description" placeholder="Description" maxlength="500"></textarea><br>
-        <!-- multi dim text box -->
-        <button onclick="addProduct()">Add product</button>
-        <p id="add-error" style="color: #c00; margin: 6px 0 0 0;"></p> <!-- inline error message -->
-    </div>
+        </div>
+    </nav>
 
-    <div id="product-grid" class="grid-container"></div>
+
+    <!-- ===== BROWSE VIEW ===== -->
+    <section id="view-browse" class="p-6">
+        <p id="product-count"></p>
+
+        <!-- SEARCH / FILTER toolbar -->
+        <div class="toolbar flex gap-2 mb-6">
+            <input id="search-input" type="text" placeholder="Search by name..."
+                class="px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none text-sm w-56">
+            <button onclick="doSearch()"
+                class="px-4 py-2 rounded-lg bg-teal-brand hover:bg-teal-deep text-white text-sm font-medium transition">Search</button>
+            <button onclick="clearSearch()"
+                class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-sm font-medium transition">Clear</button>
+        </div>
+
+
+        <div id="product-grid" class="grid-container"></div>
+    </section>
+
+
+    <!-- ===== ADD VIEW ===== -->
+    <section id="view-add" class="p-6" style="display:none;">
+        <!-- ADD PRODUCT form -->
+        <div class="form-box max-w-lg bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+            <h3 class="font-semibold text-xl">Add a product</h3>
+
+            <input id="add-name" type="text" placeholder="Name" maxlength="100"
+                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none">
+
+            <input id="add-price" type="number" placeholder="Price"
+                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none">
+
+            <input id="add-category" type="text" placeholder="Category" maxlength="50"
+                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none">
+
+            <textarea id="add-description" placeholder="Description" maxlength="500" rows="3"
+                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none resize-none"></textarea>
+
+            <button onclick="addProduct()"
+                class="w-full py-2.5 rounded-lg bg-gradient-to-r from-teal-brand to-lilac-brand hover:opacity-90 text-white font-medium transition">Add
+                product</button>
+
+            <p id="add-error" class="text-red-500 text-sm"></p>
+        </div>
+    </section>
 
     <!-- DETAIL view (also holds the edit form) -->
     <div id="product-detail" style="display: none;" class="detail-view">
-        <button onclick="showGrid()">Back to products</button>
         <div id="product-detail-content"></div>
     </div>
 
@@ -101,6 +159,33 @@
         // const api_url = "http://13.63.106.44/api";
         const api_url = "http://13.63.106.44/api";
 
+
+
+        // ---------- TAB SWITCHING ----------
+        // shows one view, hides the others, and highlights the active tab
+        function showTab(tab) {
+            const browse = document.getElementById("view-browse");
+            const add = document.getElementById("view-add");
+            const detail = document.getElementById("product-detail");
+            const tabBrowse = document.getElementById("tab-browse");
+            const tabAdd = document.getElementById("tab-add");
+
+            detail.style.display = "none";   // leaving detail/edit whenever we switch tabs
+
+
+            if (tab === "add") {
+                browse.style.display = "none";
+                add.style.display = "block";
+                // active = white pill + teal text; inactive = grey
+                tabAdd.className = "px-4 py-1.5 rounded-full text-sm font-medium bg-white shadow text-teal-deep";
+                tabBrowse.className = "px-4 py-1.5 rounded-full text-sm font-medium text-slate-500";
+            } else {
+                add.style.display = "none";
+                browse.style.display = "block";
+                tabBrowse.className = "px-4 py-1.5 rounded-full text-sm font-medium bg-white shadow text-teal-deep";
+                tabAdd.className = "px-4 py-1.5 rounded-full text-sm font-medium text-slate-500";
+            }
+        }
         // ---------- READ (list, with optional search) ----------
         async function loadAllProducts(search) {
             let url = api_url + "/products/";
@@ -119,14 +204,19 @@
 
             data.products.forEach(p => {
                 const card = document.createElement("div");
-                card.className = "product-card";
+                card.className = "product-card group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition cursor-pointer overflow-hidden";
 
                 card.innerHTML =
-                    "<h3>" + p.name + "</h3>" +
-                    "<p>Rs. " + p.price + "</p>" +
-                    "<div class='card-buttons'>" +
-                    "<button class='edit-btn'>Edit</button>" +
-                    "<button class='delete-btn'>Delete</button>" +
+                    "<div class='h-28 bg-gradient-to-br from-teal-soft to-lilac-soft flex items-center justify-center'>" +
+                    "<span class='font-bold text-3xl text-slate-400'>" + (p.name ? p.name.charAt(0).toUpperCase() : "?") + "</span>" +
+                    "</div>" +
+                    "<div class='p-4'>" +
+                    "<h3 class='font-semibold text-base leading-tight'>" + p.name + "</h3>" +
+                    "<p class='text-lilac-deep font-semibold mt-1'>Rs. " + p.price + "</p>" +
+                    "<div class='card-buttons mt-3 flex gap-2'>" +
+                    "<button class='edit-btn flex-1 py-1.5 rounded-lg bg-teal-soft text-teal-deep text-sm font-medium hover:bg-teal-brand hover:text-white transition'>Edit</button>" +
+                    "<button class='delete-btn flex-1 py-1.5 rounded-lg bg-red-50 text-red-500 text-sm font-medium hover:bg-red-500 hover:text-white transition'>Delete</button>" +
+                    "</div>" +
                     "</div>";
 
                 // clicking the card (but not the buttons) opens detail
@@ -243,11 +333,16 @@
 
             const content = document.getElementById("product-detail-content");
             content.innerHTML =
-                "<h2>" + prod.name + "</h2>" +
-                "<p>Price: Rs. " + prod.price + "</p>" +
-                "<p>Category: " + prod.category + "</p>" +
-                "<p>" + prod.description + "</p>";
-
+                "<button onclick='showGrid()' class='mb-4 inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-teal-soft text-teal-deep font-medium hover:bg-teal-brand hover:text-white transition'>&larr; Back to products</button>" +
+                "<div class='bg-white rounded-2xl border border-slate-100 shadow-sm p-6'>" +
+                "<div class='h-40 -mx-6 -mt-6 mb-4 rounded-t-2xl bg-gradient-to-br from-teal-soft to-lilac-soft flex items-center justify-center'>" +
+                "<span class='font-bold text-6xl text-slate-400'>" + (prod.name ? prod.name.charAt(0).toUpperCase() : "?") + "</span>" +
+                "</div>" +
+                "<h2 class='font-bold text-2xl'>" + prod.name + "</h2>" +
+                "<p class='text-lilac-deep font-semibold text-lg mt-1'>Rs. " + prod.price + "</p>" +
+                "<span class='inline-block mt-2 px-3 py-1 rounded-full bg-teal-soft text-teal-deep text-sm'>" + prod.category + "</span>" +
+                "<p class='text-slate-600 mt-3'>" + prod.description + "</p>" +
+                "</div>";
             document.getElementById("product-grid").style.display = "none";
             document.getElementById("product-detail").style.display = "block";
         }
@@ -257,14 +352,15 @@
         function showEditForm(p) {
             const content = document.getElementById("product-detail-content");
             content.innerHTML =
-                "<h2>Edit product</h2>" +
-                "<input id='edit-name' maxlength='100'><br>" +
-                "<input id='edit-price' type='number'><br>" +
-                "<input id='edit-category' maxlength='50'><br>" +
-                "<textarea id='edit-description' maxlength='500'></textarea><br>" +
-                "<button id='save-edit'>Save changes</button>" +
-                "<p id='edit-error' style='color: #c00; margin: 6px 0 0 0;'></p>";
-
+                "<h2 class='font-semibold text-xl mb-4'>Edit product</h2>" +
+                "<div class='space-y-3'>" +
+                "<input id='edit-name' maxlength='100' class='w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none'>" +
+                "<input id='edit-price' type='number' class='w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none'>" +
+                "<input id='edit-category' maxlength='50' class='w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none'>" +
+                "<textarea id='edit-description' maxlength='500' rows='3' class='w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none resize-none'></textarea>" +
+                "<button id='save-edit' class='w-full py-2.5 rounded-lg bg-gradient-to-r from-teal-brand to-lilac-brand hover:opacity-90 text-white font-medium transition'>Save changes</button>" +
+                "<p id='edit-error' class='text-red-500 text-sm'></p>" +
+                "</div>";
             // set values as properties so apostrophes (e.g. "Women's Kurta") don't break the HTML
             content.querySelector("#edit-name").value = p.name;
             content.querySelector("#edit-price").value = p.price;
@@ -322,6 +418,7 @@
         }
 
         // kick off the fetch
+        showTab("browse");
         loadAllProducts();
     </script>
 </body>
