@@ -141,6 +141,8 @@
             <textarea id="add-description" placeholder="Description" maxlength="500" rows="3"
                 class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none resize-none"></textarea>
 
+            <input id="add-image" type="text" placeholder="Image URL (optional)" maxlength="500"
+                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none">
             <button onclick="addProduct()"
                 class="w-full py-2.5 rounded-lg bg-gradient-to-r from-teal-brand to-lilac-brand hover:opacity-90 text-white font-medium transition">Add
                 product</button>
@@ -207,9 +209,12 @@
                 card.className = "product-card group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition cursor-pointer overflow-hidden";
 
                 card.innerHTML =
-                    "<div class='h-28 bg-gradient-to-br from-teal-soft to-lilac-soft flex items-center justify-center'>" +
-                    "<span class='font-bold text-3xl text-slate-400'>" + (p.name ? p.name.charAt(0).toUpperCase() : "?") + "</span>" +
-                    "</div>" +
+                    (p.image
+                        ? "<img src='" + p.image + "' alt='" + p.name + "' class='h-28 w-full object-cover' onerror=\"this.src=''; this.className='h-28 w-full bg-gradient-to-br from-teal-soft to-lilac-soft';\">"
+                        : "<div class='h-28 bg-gradient-to-br from-teal-soft to-lilac-soft flex items-center justify-center'>" +
+                        "<span class='font-bold text-3xl text-slate-400'>" + (p.name ? p.name.charAt(0).toUpperCase() : "?") + "</span>" +
+                        "</div>"
+                    ) +
                     "<div class='p-4'>" +
                     "<h3 class='font-semibold text-base leading-tight'>" + p.name + "</h3>" +
                     "<p class='text-lilac-deep font-semibold mt-1'>Rs. " + p.price + "</p>" +
@@ -288,7 +293,8 @@
                 name: name,
                 price: Number(priceRaw),
                 category: document.getElementById("add-category").value,
-                description: document.getElementById("add-description").value
+                description: document.getElementById("add-description").value,
+                image: document.getElementById("add-image").value
             };
 
             const res = await fetch(api_url + "/products/create/", {   // create lives at its own endpoint now
@@ -308,6 +314,7 @@
             document.getElementById("add-price").value = "";
             document.getElementById("add-category").value = "";
             document.getElementById("add-description").value = "";
+            document.getElementById("add-image").value = "";
             loadAllProducts();
         }
 
