@@ -365,6 +365,7 @@
                 "<input id='edit-price' type='number' class='w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none'>" +
                 "<input id='edit-category' maxlength='50' class='w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none'>" +
                 "<textarea id='edit-description' maxlength='500' rows='3' class='w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none resize-none'></textarea>" +
+                "<input id='edit-image' maxlength='500' placeholder='Image URL' class='w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none'>" +
                 "<button id='save-edit' class='w-full py-2.5 rounded-lg bg-gradient-to-r from-teal-brand to-lilac-brand hover:opacity-90 text-white font-medium transition'>Save changes</button>" +
                 "<p id='edit-error' class='text-red-500 text-sm'></p>" +
                 "</div>";
@@ -373,6 +374,7 @@
             content.querySelector("#edit-price").value = p.price;
             content.querySelector("#edit-category").value = p.category;
             content.querySelector("#edit-description").value = p.description;
+            content.querySelector("#edit-image").value = p.image || "";
 
             content.querySelector("#save-edit").onclick = function () {
                 updateProduct(p._id);
@@ -400,7 +402,8 @@
                 name: name,
                 price: Number(priceRaw),
                 category: document.getElementById("edit-category").value,
-                description: document.getElementById("edit-description").value
+                description: document.getElementById("edit-description").value,
+                image: document.getElementById("edit-image").value
             };
 
             const res = await fetch(api_url + "/products/" + productId + "/", {
