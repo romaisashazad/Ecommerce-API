@@ -12,3 +12,4 @@ client = MongoClient(MONGO_URI)   # opens the connection to atlas cluster using 
 
 db = client ["ecommerce_db"]        # for mongodb, no need to create  a db in advance, just point to it "ecomm.." here
 products_collection = db["products"]   # collection -> same idea as table in SQL
+orders_collection = db["orders"]   # new: stores placed orders

@@ -7,4 +7,5 @@ urlpatterns = [
     path("products/create/", views.create_product, name="create_product"),  # POST
     path("products/lookup/", views.retrieve_product_by_query, name="retrieve_product_by_query"), # specific URL segment should come first
     path("products/<str:product_id>/", views.product_detail_router, name="product_detail_router"), # generic catch-all pattern
+    path("orders/place/", views.place_order, name="place_order"),
 ]

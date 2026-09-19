@@ -4,7 +4,7 @@ from django.shortcuts import render
 
 # Create your views here.
 from django.http import JsonResponse      # django tool for sending back json
-from .db import products_collection    # . -> from the same folder as this file, geting prod_coll from shop
+from .db import products_collection, orders_collection    # . -> from the same folder as this file, geting prod_coll from shop
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -308,3 +308,89 @@ def product_detail_router(request,product_id):
     else:
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
+@csrf_exempt
+def place_order(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    # 1. Parse the incoming order
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    customer = data.get("customer", {})
+    items = data.get("items", [])
+
+    # 2. Basic validation — need customer details and at least one item
+    if not customer.get("name") or not customer.get("email"):
+        return JsonResponse({"error": "Customer name and email are required"}, status=400)
+    if not customer.get("address") or not customer.get("phone"):
+        return JsonResponse({"error": "Customer address and phone are required"}, status=400)
+    if not items:
+        return JsonResponse({"error": "Cart is empty"}, status=400)
+
+    # 3. Check stock for EVERY item before touching anything
+    for item in items:
+        try:
+            object_id = ObjectId(item.get("id"))
+        except InvalidId:
+            return JsonResponse({"error": "Invalid product ID in cart"}, status=400)
+
+        product = products_collection.find_one({"_id": object_id, "is_deleted": False})
+        if product is None:
+            return JsonResponse({"error": "A product in your cart no longer exists"}, status=400)
+
+        quantity = item.get("quantity", 0)
+        if quantity < 1:
+            return JsonResponse({"error": "Invalid quantity"}, status=400)
+        if product.get("stock", 0) < quantity:
+            return JsonResponse(
+                {"error": "Not enough stock for " + product["name"]},
+                status=400
+            )
+
+    # 4. All items passed the stock check — reduce stock for each
+    order_items = []
+    total = 0
+    for item in items:
+        object_id = ObjectId(item.get("id"))
+        product = products_collection.find_one({"_id": object_id})
+        quantity = item.get("quantity")
+
+        # reduce this product's stock
+        products_collection.update_one(
+            {"_id": object_id},
+            {"$inc": {"stock": -quantity}}   # $inc with a negative number subtracts
+        )
+
+        line_total = product["price"] * quantity
+        total += line_total
+        order_items.append({
+            "product_id": str(object_id),
+            "name": product["name"],
+            "price": product["price"],
+            "quantity": quantity,
+            "line_total": line_total,
+        })
+
+    # 5. Save the order
+    new_order = {
+        "customer": {
+            "name": customer.get("name"),
+            "email": customer.get("email"),
+            "address": customer.get("address"),
+            "phone": customer.get("phone"),
+        },
+        "items": order_items,
+        "total": total,
+        "status": "placed",
+    }
+    result = orders_collection.insert_one(new_order)
+    new_order["_id"] = str(result.inserted_id)
+
+    return JsonResponse({
+        "success": True,
+        "message": "Order placed successfully",
+        "order": new_order,
+    }, status=201)

@@ -81,6 +81,9 @@
 
 <body>
 
+    <!-- ============================================================ -->
+    <!--  NAVBAR                                                       -->
+    <!-- ============================================================ -->
     <nav class="bg-white border-b border-slate-100 sticky top-0 z-10">
         <div class="max-w-6xl mx-auto px-6 flex items-center justify-between h-16">
 
@@ -91,20 +94,24 @@
                 <span class="font-bold text-xl">MyShop</span>
             </div>
 
-            <!--================TAB BUTTONS==================== -->
             <!-- tab buttons -->
             <div class="flex items-center gap-1 bg-slate-100 rounded-full p-1">
                 <button id="tab-browse" onclick="showTab('browse')"
                     class="px-4 py-1.5 rounded-full text-sm font-medium bg-white shadow text-teal-deep">Browse</button>
                 <button id="tab-add" onclick="showTab('add')"
                     class="px-4 py-1.5 rounded-full text-sm font-medium text-slate-500">Add product</button>
+                <button id="tab-cart" onclick="showTab('cart')"
+                    class="px-4 py-1.5 rounded-full text-sm font-medium text-slate-500">Cart (<span
+                        id="cart-count">0</span>)</button>
             </div>
 
         </div>
     </nav>
 
 
-    <!-- ===== BROWSE VIEW ===== -->
+    <!-- ============================================================ -->
+    <!--  BROWSE VIEW  (product grid + search)                        -->
+    <!-- ============================================================ -->
     <section id="view-browse" class="p-6">
         <p id="product-count"></p>
 
@@ -118,17 +125,18 @@
                 class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-sm font-medium transition">Clear</button>
         </div>
 
-
         <div id="product-grid" class="grid-container"></div>
     </section>
 
 
-    <!-- ===== ADD VIEW ===== -->
+    <!-- ============================================================ -->
+    <!--  ADD PRODUCT VIEW  (admin form)                              -->
+    <!-- ============================================================ -->
     <section id="view-add" class="p-6" style="display:none;">
-        <!-- ADD PRODUCT form -->
         <div class="form-box max-w-lg bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
             <h3 class="font-semibold text-xl">Add a product</h3>
 
+            <!-- maxlength enforces the backend length caps right in the input -->
             <input id="add-name" type="text" placeholder="Name" maxlength="100"
                 class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none">
 
@@ -146,6 +154,7 @@
 
             <input id="add-stock" type="number" placeholder="Stock (quantity)" min="0"
                 class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none">
+
             <button onclick="addProduct()"
                 class="w-full py-2.5 rounded-lg bg-gradient-to-r from-teal-brand to-lilac-brand hover:opacity-90 text-white font-medium transition">Add
                 product</button>
@@ -154,44 +163,147 @@
         </div>
     </section>
 
-    <!-- DETAIL view (also holds the edit form) -->
+
+    <!-- ============================================================ -->
+    <!--  CART VIEW                                                    -->
+    <!-- ============================================================ -->
+    <section id="view-cart" class="p-6" style="display:none;">
+        <h1 class="font-display font-bold text-2xl mb-4">Your Cart</h1>
+        <div id="cart-content"></div>
+    </section>
+
+
+    <!-- ============================================================ -->
+    <!--  CHECKOUT VIEW  (customer details)                           -->
+    <!-- ============================================================ -->
+    <section id="view-checkout" class="p-6" style="display:none;">
+        <h1 class="font-bold text-2xl mb-4">Checkout</h1>
+        <div class="max-w-lg bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+            <input id="checkout-name" type="text" placeholder="Full name"
+                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none">
+            <input id="checkout-email" type="email" placeholder="Email"
+                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none">
+            <input id="checkout-phone" type="text" placeholder="Phone"
+                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none">
+            <textarea id="checkout-address" placeholder="Delivery address" rows="3"
+                class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-teal-brand focus:ring-2 focus:ring-teal-soft outline-none resize-none"></textarea>
+
+            <!-- order summary is filled in by showCheckout() -->
+            <div id="checkout-summary" class="text-sm text-slate-600 border-t border-slate-100 pt-3"></div>
+
+            <button onclick="goToPayment()"
+                class="w-full py-2.5 rounded-lg bg-gradient-to-r from-teal-brand to-lilac-brand hover:opacity-90 text-white font-medium transition">Continue
+                to Payment</button>
+            <p id="checkout-error" class="text-red-500 text-sm"></p>
+        </div>
+    </section>
+
+
+    <!-- ============================================================ -->
+    <!--  PAY VIEW  (dummy payment page)                              -->
+    <!-- ============================================================ -->
+    <section id="view-pay" class="p-6" style="display:none;">
+        <h1 class="font-bold text-2xl mb-4">Payment</h1>
+        <div class="max-w-lg bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4 text-center">
+            <p class="text-slate-500">This is a demo payment page.</p>
+            <p class="text-2xl font-bold" id="pay-total">Rs. 0</p>
+            <button onclick="payNow()"
+                class="w-full py-3 rounded-lg bg-gradient-to-r from-teal-brand to-lilac-brand hover:opacity-90 text-white font-semibold transition">Pay
+                Now</button>
+            <p id="pay-error" class="text-red-500 text-sm"></p>
+        </div>
+    </section>
+
+
+    <!-- ============================================================ -->
+    <!--  CONFIRMATION VIEW                                            -->
+    <!-- ============================================================ -->
+    <section id="view-confirm" class="p-6" style="display:none;">
+        <div class="max-w-lg mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
+            <div class="text-5xl mb-3">&#9989;</div>
+            <h1 class="font-bold text-2xl mb-2">Order placed successfully!</h1>
+            <p class="text-slate-500 mb-4" id="confirm-message"></p>
+            <button onclick="showTab('browse')"
+                class="px-6 py-2.5 rounded-lg bg-teal-brand hover:bg-teal-deep text-white font-medium transition">Continue
+                shopping</button>
+        </div>
+    </section>
+
+
+    <!-- ============================================================ -->
+    <!--  DETAIL / EDIT VIEW  (single product + edit form)           -->
+    <!-- ============================================================ -->
     <div id="product-detail" style="display: none;" class="detail-view">
         <div id="product-detail-content"></div>
     </div>
 
     <script>
+        // ============================================================
+        //  CONFIG
+        // ============================================================
         // const api_url = "https://ecommerce-api-romaisashazads-projects.vercel.app/api";
         // const api_url = "http://13.63.106.44/api";
         const api_url = "http://13.63.106.44/api";
 
+        //  CART (lives in the browser, not database)
+        let cart = [];   // each item: { id, name, price, image, stock, quantity }, let since carts content will change
 
 
-        // ---------- TAB SWITCHING ----------
+        // ============================================================
+        //  NAVIGATION  (switching between views)
+        // ============================================================
         // shows one view, hides the others, and highlights the active tab
         function showTab(tab) {
             const browse = document.getElementById("view-browse");
             const add = document.getElementById("view-add");
+            const cartView = document.getElementById("view-cart");
             const detail = document.getElementById("product-detail");
             const tabBrowse = document.getElementById("tab-browse");
             const tabAdd = document.getElementById("tab-add");
+            const tabCart = document.getElementById("tab-cart");
 
             detail.style.display = "none";   // leaving detail/edit whenever we switch tabs
 
+            // STEP 1: hide ALL views, no matter what
+            browse.style.display = "none";
+            add.style.display = "none";
+            cartView.style.display = "none";
+            document.getElementById("view-checkout").style.display = "none";
+            document.getElementById("view-pay").style.display = "none";
+            document.getElementById("view-confirm").style.display = "none";
 
+            // STEP 2: reset ALL tabs to the "inactive" grey style
+            const inactive = "px-4 py-1.5 rounded-full text-sm font-medium text-slate-500";
+            const active = "px-4 py-1.5 rounded-full text-sm font-medium bg-white shadow text-teal-deep";
+            tabBrowse.className = inactive;
+            tabAdd.className = inactive;
+            tabCart.className = inactive;
+
+            // STEP 3: now show just the ONE we want, and mark its tab active
             if (tab === "add") {
-                browse.style.display = "none";
                 add.style.display = "block";
-                // active = white pill + teal text; inactive = grey
-                tabAdd.className = "px-4 py-1.5 rounded-full text-sm font-medium bg-white shadow text-teal-deep";
-                tabBrowse.className = "px-4 py-1.5 rounded-full text-sm font-medium text-slate-500";
+                tabAdd.className = active;
+            } else if (tab === "cart") {
+                cartView.style.display = "block";
+                tabCart.className = active;
+                renderCart();   // draw the cart contents when opening the tab
             } else {
-                add.style.display = "none";
                 browse.style.display = "block";
-                tabBrowse.className = "px-4 py-1.5 rounded-full text-sm font-medium bg-white shadow text-teal-deep";
-                tabAdd.className = "px-4 py-1.5 rounded-full text-sm font-medium text-slate-500";
+                tabBrowse.className = active;
             }
         }
-        // ---------- READ (list, with optional search) ----------
+
+        // returns from detail/edit back to the product grid
+        function showGrid() {
+            document.getElementById("product-detail").style.display = "none";
+            document.getElementById("product-grid").style.display = "flex";  // FIX: flex, not block
+        }
+
+
+        // ============================================================
+        //  READ  (loading and displaying products)
+        // ============================================================
+        // list, with optional search
         async function loadAllProducts(search) {
             let url = api_url + "/products/";
             if (search) {
@@ -222,7 +334,9 @@
                     "<h3 class='font-semibold text-base leading-tight'>" + p.name + "</h3>" +
                     "<p class='text-lilac-deep font-semibold mt-1'>Rs. " + p.price + "</p>" +
                     "<p class='text-sm mt-1 " + (p.stock > 0 ? "text-green-600" : "text-red-500") + "'>" + (p.stock > 0 ? (p.stock + " in stock") : "Out of stock") + "</p>" +
-                    "<div class='card-buttons mt-3 flex gap-2'>" +
+                    "<div class='card-buttons mt-3 space-y-2'>" +
+                    "<button class='cart-btn w-full py-1.5 rounded-lg bg-lilac-brand text-white text-sm font-medium hover:bg-lilac-deep transition " + (p.stock > 0 ? "" : "opacity-50 cursor-not-allowed") + "'>Add to cart</button>" +
+                    "<div class='flex gap-2'>" +
                     "<button class='edit-btn flex-1 py-1.5 rounded-lg bg-teal-soft text-teal-deep text-sm font-medium hover:bg-teal-brand hover:text-white transition'>Edit</button>" +
                     "<button class='delete-btn flex-1 py-1.5 rounded-lg bg-red-50 text-red-500 text-sm font-medium hover:bg-red-500 hover:text-white transition'>Delete</button>" +
                     "</div>" +
@@ -245,11 +359,57 @@
                     deleteProduct(p._id);
                 };
 
+                // Add to cart button
+                card.querySelector(".cart-btn").onclick = function (event) {
+                    event.stopPropagation();
+                    addToCart(p);
+                };
+
                 grid.appendChild(card);
             });
         }
 
-        // ---------- SHARED VALIDATION ----------
+        // single product detail page
+        async function loadProductDetail(productId) {
+            const res = await fetch(api_url + "/products/" + productId + "/");
+            const prod = await res.json();
+
+            const content = document.getElementById("product-detail-content");
+            content.innerHTML =
+                "<button onclick='showGrid()' class='mb-4 inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-teal-soft text-teal-deep font-medium hover:bg-teal-brand hover:text-white transition'>&larr; Back to products</button>" +
+                "<div class='bg-white rounded-2xl border border-slate-100 shadow-sm p-6'>" +
+                (prod.image
+                    ? "<img src='" + prod.image + "' alt='" + prod.name + "' class='h-80 w-full object-cover rounded-xl mb-4'>"
+                    : "<div class='h-40 -mx-6 -mt-6 mb-4 rounded-t-2xl bg-gradient-to-br from-teal-soft to-lilac-soft flex items-center justify-center'>" +
+                    "<span class='font-bold text-6xl text-slate-400'>" + (prod.name ? prod.name.charAt(0).toUpperCase() : "?") + "</span>" +
+                    "</div>") +
+                "<h2 class='font-bold text-2xl'>" + prod.name + "</h2>" +
+                "<p class='text-lilac-deep font-semibold text-lg mt-1'>Rs. " + prod.price + "</p>" +
+                "<span class='inline-block mt-2 px-3 py-1 rounded-full bg-teal-soft text-teal-deep text-sm'>" + prod.category + "</span>" +
+                "<p class='text-slate-600 mt-3'>" + prod.description + "</p>" +
+                "</div>";
+            document.getElementById("product-grid").style.display = "none";
+            document.getElementById("product-detail").style.display = "block";
+        }
+
+
+        // ============================================================
+        //  SEARCH
+        // ============================================================
+        function doSearch() {
+            const term = document.getElementById("search-input").value;
+            loadAllProducts(term);
+        }
+
+        function clearSearch() {
+            document.getElementById("search-input").value = "";
+            loadAllProducts();
+        }
+
+
+        // ============================================================
+        //  VALIDATION
+        // ============================================================
         // Mirrors the backend rules for fast feedback. The backend is still the
         // real gatekeeper; this just saves a round-trip and shows a friendlier message.
         // Returns an error string if something's wrong, or null if the input is valid.
@@ -267,18 +427,10 @@
             return null;  // all good
         }
 
-        // ---------- SEARCH ----------
-        function doSearch() {
-            const term = document.getElementById("search-input").value;
-            loadAllProducts(term);
-        }
 
-        function clearSearch() {
-            document.getElementById("search-input").value = "";
-            loadAllProducts();
-        }
-
-        // ---------- CREATE (POST) ----------
+        // ============================================================
+        //  CREATE  (admin adds a product)
+        // ============================================================
         async function addProduct() {
             const errorEl = document.getElementById("add-error");
             errorEl.textContent = "";   // clear any previous error
@@ -324,45 +476,10 @@
             loadAllProducts();
         }
 
-        // ---------- DELETE ----------
-        async function deleteProduct(productId) {
-            if (!confirm("Delete this product?")) return;
 
-            const res = await fetch(api_url + "/products/" + productId + "/", {
-                method: "DELETE"
-            });
-
-            if (!res.ok) {
-                alert("Could not delete (status " + res.status + ")");
-                return;
-            }
-            loadAllProducts();
-        }
-
-        // ---------- READ ONE (detail) ----------
-        async function loadProductDetail(productId) {
-            const res = await fetch(api_url + "/products/" + productId + "/");
-            const prod = await res.json();
-
-            const content = document.getElementById("product-detail-content");
-            content.innerHTML =
-                "<button onclick='showGrid()' class='mb-4 inline-flex items-center gap-1 px-4 py-2 rounded-lg bg-teal-soft text-teal-deep font-medium hover:bg-teal-brand hover:text-white transition'>&larr; Back to products</button>" +
-                "<div class='bg-white rounded-2xl border border-slate-100 shadow-sm p-6'>" +
-                (prod.image
-                    ? "<img src='" + prod.image + "' alt='" + prod.name + "' class='h-80 w-full object-cover rounded-xl mb-4'>"
-                    : "<div class='h-40 -mx-6 -mt-6 mb-4 rounded-t-2xl bg-gradient-to-br from-teal-soft to-lilac-soft flex items-center justify-center'>" +
-                    "<span class='font-bold text-6xl text-slate-400'>" + (prod.name ? prod.name.charAt(0).toUpperCase() : "?") + "</span>" +
-                    "</div>") +
-                "<h2 class='font-bold text-2xl'>" + prod.name + "</h2>" +
-                "<p class='text-lilac-deep font-semibold text-lg mt-1'>Rs. " + prod.price + "</p>" +
-                "<span class='inline-block mt-2 px-3 py-1 rounded-full bg-teal-soft text-teal-deep text-sm'>" + prod.category + "</span>" +
-                "<p class='text-slate-600 mt-3'>" + prod.description + "</p>" +
-                "</div>";
-            document.getElementById("product-grid").style.display = "none";
-            document.getElementById("product-detail").style.display = "block";
-        }
-
-        // ---------- UPDATE (PATCH) ----------
+        // ============================================================
+        //  UPDATE  (admin edits a product)
+        // ============================================================
         // Show an edit form pre-filled with the product's current values
         function showEditForm(p) {
             const content = document.getElementById("product-detail-content");
@@ -432,13 +549,238 @@
             loadAllProducts();
         }
 
-        // ---------- navigation ----------
-        function showGrid() {
-            document.getElementById("product-detail").style.display = "none";
-            document.getElementById("product-grid").style.display = "flex";  // FIX: flex, not block
+
+        // ============================================================
+        //  DELETE  (admin removes a product)
+        // ============================================================
+        async function deleteProduct(productId) {
+            if (!confirm("Delete this product?")) return;
+
+            const res = await fetch(api_url + "/products/" + productId + "/", {
+                method: "DELETE"
+            });
+
+            if (!res.ok) {
+                alert("Could not delete (status " + res.status + ")");
+                return;
+            }
+            loadAllProducts();
         }
 
-        // kick off the fetch
+
+        // ============================================================
+        //  CART
+        // ============================================================
+        // count total items in cart and show it in the navbar badge
+        function updateCartCount() {
+            let total = 0;
+            for (const item of cart) {
+                total += item.quantity;
+            }
+            const badge = document.getElementById("cart-count");
+            if (badge) badge.textContent = total;
+        }
+
+        // add a product to the cart, or bump quantity if already there
+        function addToCart(product) {
+            if (!product.stock || product.stock < 1) {
+                alert(product.name + " is out of stock");
+                return;
+            }
+            const existing = cart.find(item => item.id === product._id);
+            if (existing) {
+                if (existing.quantity >= product.stock) {
+                    alert("Only " + product.stock + " of " + product.name + " in stock");
+                    return;
+                }
+                existing.quantity += 1;
+            } else {
+                cart.push({
+                    id: product._id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                    stock: product.stock,
+                    quantity: 1
+                });
+            }
+            updateCartCount();
+        }
+
+        // draw the cart items, quantities, and total
+        function renderCart() {
+            const container = document.getElementById("cart-content");
+
+            if (cart.length === 0) {
+                container.innerHTML = "<p class='text-slate-500'>Your cart is empty.</p>";
+                return;
+            }
+
+            let html = "<div class='space-y-3'>";
+            let total = 0;
+
+            cart.forEach(item => {
+                const lineTotal = item.price * item.quantity;
+                total += lineTotal;
+
+                html +=
+                    "<div class='flex items-center gap-4 bg-white rounded-xl border border-slate-100 p-3'>" +
+                    (item.image
+                        ? "<img src='" + item.image + "' class='w-16 h-16 object-cover rounded-lg'>"
+                        : "<div class='w-16 h-16 rounded-lg bg-teal-soft flex items-center justify-center font-bold text-slate-400'>" + item.name.charAt(0).toUpperCase() + "</div>") +
+                    "<div class='flex-1'>" +
+                    "<p class='font-semibold'>" + item.name + "</p>" +
+                    "<p class='text-lilac-deep font-semibold text-sm'>Rs. " + item.price + "</p>" +
+                    "</div>" +
+                    "<div class='flex items-center gap-2'>" +
+                    "<button onclick=\"changeQty('" + item.id + "', -1)\" class='w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 font-bold'>-</button>" +
+                    "<span class='w-6 text-center'>" + item.quantity + "</span>" +
+                    "<button onclick=\"changeQty('" + item.id + "', 1)\" class='w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 font-bold'>+</button>" +
+                    "</div>" +
+                    "<p class='font-semibold w-24 text-right'>Rs. " + lineTotal + "</p>" +
+                    "<button onclick=\"removeFromCart('" + item.id + "')\" class='text-red-500 hover:text-red-700 ml-2'>&#10005;</button>" +
+                    "</div>";
+            });
+
+            html += "</div>";
+            html += "<div class='mt-4 text-right text-xl font-bold'>Total: Rs. " + total + "</div>";
+            // Proceed to checkout button
+            html += "<div class='mt-4 text-right'>" +
+                "<button onclick='showCheckout()' class='px-6 py-2.5 rounded-lg bg-gradient-to-r from-teal-brand to-lilac-brand hover:opacity-90 text-white font-medium transition'>Proceed to Checkout</button>" +
+                "</div>";
+            container.innerHTML = html;
+        }
+
+        // change an item's quantity by +1 or -1
+        function changeQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if (!item) return;
+
+            const newQty = item.quantity + delta;
+            if (newQty < 1) {
+                removeFromCart(id);   // dropping below 1 removes it
+                return;
+            }
+            if (newQty > item.stock) {
+                alert("Only " + item.stock + " in stock");
+                return;
+            }
+            item.quantity = newQty;
+            updateCartCount();
+            renderCart();
+        }
+
+        // remove an item entirely
+        function removeFromCart(id) {
+            cart = cart.filter(i => i.id !== id);
+            updateCartCount();
+            renderCart();
+        }
+
+        // total price of everything in the cart
+        function cartTotal() {
+            let total = 0;
+            for (const item of cart) {
+                total += item.price * item.quantity;
+            }
+            return total;
+        }
+
+
+        // ============================================================
+        //  CHECKOUT  (cart -> details -> pay -> place order)
+        // ============================================================
+        // helper: hide every view, so we can show just the checkout-flow ones
+        function hideAllViews() {
+            document.getElementById("view-browse").style.display = "none";
+            document.getElementById("view-add").style.display = "none";
+            document.getElementById("view-cart").style.display = "none";
+            document.getElementById("view-checkout").style.display = "none";
+            document.getElementById("view-pay").style.display = "none";
+            document.getElementById("view-confirm").style.display = "none";
+            document.getElementById("product-detail").style.display = "none";
+        }
+
+        // STEP 1: show the checkout (customer details) view
+        function showCheckout() {
+            if (cart.length === 0) {
+                alert("Your cart is empty");
+                return;
+            }
+            hideAllViews();
+            document.getElementById("view-checkout").style.display = "block";
+
+            // fill in a small order summary
+            document.getElementById("checkout-summary").textContent =
+                cart.length + " item(s) - Total: Rs. " + cartTotal();
+            document.getElementById("checkout-error").textContent = "";
+        }
+
+        // STEP 2: validate details, then show the pay view
+        function goToPayment() {
+            const errorEl = document.getElementById("checkout-error");
+            errorEl.textContent = "";
+
+            const name = document.getElementById("checkout-name").value.trim();
+            const email = document.getElementById("checkout-email").value.trim();
+            const phone = document.getElementById("checkout-phone").value.trim();
+            const address = document.getElementById("checkout-address").value.trim();
+
+            // all four are required
+            if (!name || !email || !phone || !address) {
+                errorEl.textContent = "Please fill in all your details";
+                return;
+            }
+
+            hideAllViews();
+            document.getElementById("view-pay").style.display = "block";
+            document.getElementById("pay-total").textContent = "Rs. " + cartTotal();
+        }
+
+        // STEP 3: Pay Now -> send the order to the backend
+        async function payNow() {
+            const errorEl = document.getElementById("pay-error");
+            errorEl.textContent = "";
+
+            // build the order payload from the cart + the details entered
+            const order = {
+                customer: {
+                    name: document.getElementById("checkout-name").value.trim(),
+                    email: document.getElementById("checkout-email").value.trim(),
+                    phone: document.getElementById("checkout-phone").value.trim(),
+                    address: document.getElementById("checkout-address").value.trim()
+                },
+                items: cart.map(item => ({ id: item.id, quantity: item.quantity }))
+            };
+
+            const res = await fetch(api_url + "/orders/place/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(order)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                errorEl.textContent = "Could not place order: " + (err.error || res.status);
+                return;
+            }
+
+            // success: show confirmation, clear the cart, refresh products (stock changed)
+            hideAllViews();
+            document.getElementById("view-confirm").style.display = "block";
+            document.getElementById("confirm-message").textContent =
+                "Thank you! A confirmation has been sent to " +
+                document.getElementById("checkout-email").value.trim() + ".";
+
+            cart = [];
+            updateCartCount();
+            loadAllProducts();
+        }
+
+
+        // ============================================================
+        //  STARTUP  (runs when the page loads)
+        // ============================================================
         showTab("browse");
         loadAllProducts();
     </script>
